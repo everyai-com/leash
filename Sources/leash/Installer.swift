@@ -18,6 +18,10 @@ enum Installer {
             "matcher": "",
             "hooks": [["type": "command", "command": stopCmd]]
         ]]
+        hooks["Notification"] = [[
+            "matcher": "",
+            "hooks": [["type": "command", "command": stopCmd]]
+        ]]
         hooks["UserPromptSubmit"] = [[
             "matcher": "",
             "hooks": [["type": "command", "command": submitCmd]]
@@ -35,7 +39,7 @@ enum Installer {
     static func uninstall() {
         var settings = loadSettings()
         if var hooks = settings["hooks"] as? [String: Any] {
-            for key in ["Stop", "UserPromptSubmit"] {
+            for key in ["Stop", "Notification", "UserPromptSubmit"] {
                 if let entries = hooks[key] as? [[String: Any]] {
                     let filtered = entries.compactMap { entry -> [String: Any]? in
                         guard let inner = entry["hooks"] as? [[String: Any]] else { return entry }
