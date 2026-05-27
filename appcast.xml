@@ -6,16 +6,16 @@
     <description>Auto-update feed for leash.</description>
     <language>en</language>
     <item>
-      <title>Version 0.4.2</title>
-      <pubDate>Wed, 27 May 2026 17:57:35 +0000</pubDate>
-      <sparkle:version>0.4.2</sparkle:version>
-      <sparkle:shortVersionString>0.4.2</sparkle:shortVersionString>
+      <title>Version 0.4.3</title>
+      <pubDate>Wed, 27 May 2026 18:03:21 +0000</pubDate>
+      <sparkle:version>0.4.3</sparkle:version>
+      <sparkle:shortVersionString>0.4.3</sparkle:shortVersionString>
       <sparkle:minimumSystemVersion>13.0</sparkle:minimumSystemVersion>
       <enclosure
-        url="https://github.com/everyai-com/leash/releases/download/v0.4.2/leash-0.4.2-macos.zip"
-        length="2642249"
+        url="https://github.com/everyai-com/leash/releases/download/v0.4.3/leash-0.4.3-macos.zip"
+        length="2976688"
         type="application/octet-stream"
-        ERROR! Signing key not found for account ed25519. Please run generate_keys tool first or provide key with --ed-key-file <private_key_file> />
+        sparkle:edSignature="L/v8Nmmc3L5biFs4XQRXDABFgUh9cXJ6fOY5YFHQ+2X0rxdWrVvKDol/Oqvhn5+g4NwfBTO4f7WRM2ZBHg1RBQ==" length="2976688" />
     </item>
   </channel>
 </rss>

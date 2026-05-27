@@ -8,6 +8,7 @@ final class OverlayController {
     private let focus: FocusManager
     private var pendingPID: Int32?
     private var startedAt: Date?
+    private var eventMonitor: Any?
 
     init(focus: FocusManager) {
         self.focus = focus
@@ -50,11 +51,29 @@ final class OverlayController {
             self?.playSound()
         }
         sendMediaKey()
+
+        // Catch ⏎/Esc/click anywhere across all overlay windows (no matter
+        // which display has the key window).
+        eventMonitor = NSEvent.addLocalMonitorForEvents(matching: [.keyDown, .leftMouseDown]) { [weak self] event in
+            guard let self else { return event }
+            if event.type == .keyDown {
+                if event.keyCode == 36 || event.keyCode == 76 || event.keyCode == 53 {
+                    self.engage(); return nil
+                }
+            } else if event.type == .leftMouseDown {
+                self.engage(); return nil
+            }
+            return event
+        }
     }
 
     func release() {
         soundTimer?.invalidate()
         soundTimer = nil
+        if let monitor = eventMonitor {
+            NSEvent.removeMonitor(monitor)
+            eventMonitor = nil
+        }
         for window in windows { window.orderOut(nil) }
         windows.removeAll()
         startedAt = nil
