@@ -27,18 +27,27 @@ Go full brain-rot mode. The leash pulls you back.
 
 ## Install
 
-### Download the .app (recommended)
+### One-line install (recommended)
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/everyai-com/leash/main/install.sh | bash
+```
+
+That's it. The script downloads the latest release, installs to `/Applications`, and launches. Then click the 🐕 in your menu bar → **Install Claude Code hooks** → **Launch at login**.
+
+Future updates install themselves silently — you never run this script again.
+
+### Manual download
+
+If you'd rather not pipe a script:
 
 1. Grab the latest `leash-*-macos.zip` from [Releases](https://github.com/everyai-com/leash/releases).
 2. Unzip → drag `leash.app` to `/Applications`.
-3. **Remove the Gatekeeper warning** (one-time, paste into Terminal):
+3. One-time unblock:
    ```bash
    xattr -d com.apple.quarantine /Applications/leash.app
    ```
-   Without this, macOS will say "leash cannot be opened because Apple cannot check it for malicious software." This command tells macOS you trust the download. (We're working on full notarization to remove this step.)
 4. Double-click `leash.app` to launch.
-5. Click the 🐕 in your menu bar → **Install Claude Code hooks**.
-6. Optionally → **Launch at login**.
 
 ### Build from source
 

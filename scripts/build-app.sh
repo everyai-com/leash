@@ -113,7 +113,23 @@ cat > "$ENTITLEMENTS" <<'EOF'
 </plist>
 EOF
 
-codesign --force --deep --options runtime \
+# Sparkle's inner XPC services, Updater.app, and Autoupdate must be re-signed
+# with our identity (otherwise macOS rejects them at runtime for having a
+# different Team ID from the outer app).
+SPARKLE_INNER="$APP/Contents/Frameworks/Sparkle.framework/Versions/B"
+if [[ -d "$SPARKLE_INNER" ]]; then
+  for target in \
+      "$SPARKLE_INNER/XPCServices/Installer.xpc" \
+      "$SPARKLE_INNER/XPCServices/Downloader.xpc" \
+      "$SPARKLE_INNER/Updater.app" \
+      "$SPARKLE_INNER/Autoupdate" \
+      "$APP/Contents/Frameworks/Sparkle.framework"; do
+    [[ -e "$target" ]] || continue
+    codesign --force --options runtime --sign "$SIGN_IDENTITY" "$target" >/dev/null
+  done
+fi
+
+codesign --force --options runtime \
   --entitlements "$ENTITLEMENTS" \
   --sign "$SIGN_IDENTITY" "$APP" >/dev/null
 
