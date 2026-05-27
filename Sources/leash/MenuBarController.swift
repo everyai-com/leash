@@ -2,6 +2,7 @@ import AppKit
 
 final class MenuBarController {
     private let statusItem: NSStatusItem
+    private var launchItem: NSMenuItem!
 
     init() {
         statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
@@ -11,15 +12,27 @@ final class MenuBarController {
         }
 
         let menu = NSMenu()
-        menu.addItem(.init(title: "leash", action: nil, keyEquivalent: ""))
+        menu.autoenablesItems = false
+
+        let header = NSMenuItem(title: "leash", action: nil, keyEquivalent: "")
+        header.isEnabled = false
+        menu.addItem(header)
         menu.addItem(.separator())
-        menu.addItem(.init(title: "Install Claude Code hooks", action: #selector(install), keyEquivalent: ""))
-        menu.addItem(.init(title: "Uninstall hooks", action: #selector(uninstall), keyEquivalent: ""))
+
+        addItem(menu, title: "Install Claude Code hooks", selector: #selector(install))
+        addItem(menu, title: "Uninstall hooks", selector: #selector(uninstall))
         menu.addItem(.separator())
-        menu.addItem(.init(title: "Quit", action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q"))
-        for item in menu.items where item.action == #selector(install) || item.action == #selector(uninstall) {
-            item.target = self
-        }
+
+        launchItem = addItem(menu, title: "Launch at login", selector: #selector(toggleLaunch))
+        refreshLaunchItem()
+        menu.addItem(.separator())
+
+        addItem(menu, title: "Open project on GitHub", selector: #selector(openGitHub))
+        menu.addItem(.separator())
+
+        let quit = NSMenuItem(title: "Quit leash", action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q")
+        menu.addItem(quit)
+
         statusItem.menu = menu
     }
 
@@ -30,6 +43,27 @@ final class MenuBarController {
         }
     }
 
+    @discardableResult
+    private func addItem(_ menu: NSMenu, title: String, selector: Selector) -> NSMenuItem {
+        let item = NSMenuItem(title: title, action: selector, keyEquivalent: "")
+        item.target = self
+        menu.addItem(item)
+        return item
+    }
+
+    private func refreshLaunchItem() {
+        launchItem.state = LoginItem.isEnabled ? .on : .off
+    }
+
     @objc private func install() { Installer.install() }
     @objc private func uninstall() { Installer.uninstall() }
+    @objc private func toggleLaunch() {
+        LoginItem.toggle()
+        refreshLaunchItem()
+    }
+    @objc private func openGitHub() {
+        if let url = URL(string: "https://github.com/everyai-com/leash") {
+            NSWorkspace.shared.open(url)
+        }
+    }
 }

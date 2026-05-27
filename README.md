@@ -1,62 +1,71 @@
 # leash
 
-**Yanks you back the moment Claude finishes.**
+**Yanks you back the moment Claude finishes — or asks a question.**
 
-Long-running AI agents broke the human attention loop: you can't focus on anything else while waiting, because you don't know when they'll need you — so you babysit a terminal instead of getting your time back.
+Long-running AI agents broke the human attention loop. You can't focus on anything else while waiting, because you don't know when they'll need you — so you babysit a terminal instead of getting your time back.
 
-`leash` is a tiny Mac menu-bar app that:
+`leash` is a tiny macOS menu-bar app that:
 
-1. Listens for Claude Code's `Stop` hook (fires when Claude finishes a turn).
-2. Slams a full-screen overlay across every display, plays an alert, and pauses media.
+1. Hooks Claude Code's `Stop` and `Notification` events.
+2. Slams a full-screen overlay across every display, plays an alert, pauses media.
 3. Press `⏎` → overlay vanishes, the originating terminal jumps to the front, your cursor is in the prompt.
-4. Type your next instruction. The moment you submit, Claude's `UserPromptSubmit` hook fires → `leash` re-focuses whatever you were doing before (YouTube, whatever).
+4. Type your next instruction. The moment you submit, leash re-focuses whatever you were doing before.
 
-You get to go full brain-rot mode. The leash pulls you back.
+Go full brain-rot mode. The leash pulls you back.
 
-## Status
+## Install
 
-Pre-alpha. Built in a weekend. MIT.
+### Download the .app (recommended)
 
-## Install (from source, for now)
+1. Grab the latest `leash-*-macos.zip` from [Releases](https://github.com/everyai-com/leash/releases).
+2. Unzip → drag `leash.app` to `/Applications`.
+3. First launch: macOS will say it's from an unidentified developer. Right-click → **Open**, then **Open** again.
+4. Click the 🐕 in your menu bar → **Install Claude Code hooks**.
+5. Optionally → **Launch at login**.
+
+### Build from source
 
 ```bash
-git clone <repo>
+git clone https://github.com/everyai-com/leash
 cd leash
-swift build -c release
-cp .build/release/leash /usr/local/bin/leash
-leash install      # writes hooks into ~/.claude/settings.json
-leash &            # launches menu-bar app
+./scripts/build-app.sh
+open .build/app/leash.app
 ```
 
-Grant Accessibility permission when prompted (needed to focus other apps).
+## Permissions you'll be asked for
 
-## Uninstall
+- **Apple Events / Automation** — to focus the terminal that ran Claude.
+- **Accessibility** (optional) — for stronger focus-stealing on Sonoma+.
 
-```bash
-leash uninstall
-```
+If the overlay shows but doesn't pull you to the terminal, you skipped one of these — grant it in **System Settings → Privacy & Security**.
 
 ## How it works
 
 - A local HTTP listener on `127.0.0.1:7869`.
-- Two hook entries in `~/.claude/settings.json` that `curl` it.
-- Each request carries `$PPID` so the app can walk up the process tree to find which terminal hosted Claude — and focus exactly that one.
+- Three hook entries in `~/.claude/settings.json` (`Stop`, `Notification`, `UserPromptSubmit`) that `curl` it.
+- Each request carries `$PPID` so leash walks up the process tree to find which terminal hosted Claude — and focuses exactly that one.
+- Skips the seize when you're already looking at Claude (no double-yanks mid-conversation).
 
 No accounts. No telemetry. No network egress. All local.
 
 ## Design principles
 
 - **Forced context switch, not notification.** Notifications fail the trust-to-disengage test.
-- **One opinionated escalation.** No settings in v1 — settings come after we know the default works.
-- **Mac + Claude Code only.** Other tools/platforms are v2 plugins once the core proves itself.
+- **One opinionated escalation.** Settings come after we know the default works.
+- **Mac + Claude Code first.** Other tools/platforms are v2 plugins once the core proves itself.
 
-## Roadmap (only after v1 ships and is loved)
+## Roadmap
 
 - Codex / Cursor / Aider hooks
-- Snooze keys, per-source intensity
+- Snooze key, per-source intensity
 - Phone push as a plugin
 - Linux/Windows ports
+- Custom icon + Homebrew cask
+
+## Contributing
+
+Issues and PRs welcome. The whole app is <500 lines of Swift — easy to read in one sitting. Start at [`Sources/leash/AppDelegate.swift`](Sources/leash/AppDelegate.swift).
 
 ## License
 
-MIT. See `LICENSE`.
+MIT. See [`LICENSE`](LICENSE).
