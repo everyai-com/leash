@@ -1,60 +1,16 @@
 name: release
 
-on:
-  push:
-    tags:
-      - "v*"
+# Releases are currently built and signed locally (Developer ID + Sparkle
+# private key live on the maintainer's machine). CI just verifies the build.
+# This workflow is kept disabled until we wire signing secrets in.
 
-permissions:
-  contents: write
+on:
+  workflow_dispatch:
 
 jobs:
   build:
     runs-on: macos-14
     steps:
       - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      - name: Select Xcode
-        run: sudo xcode-select -s /Applications/Xcode_15.4.app
-
-      - name: Import Sparkle signing key
-        if: ${{ env.SPARKLE_PRIVATE_KEY != '' }}
-        env:
-          SPARKLE_PRIVATE_KEY: ${{ secrets.SPARKLE_PRIVATE_KEY }}
-        run: |
-          echo "$SPARKLE_PRIVATE_KEY" \
-            | security add-generic-password \
-                -a ed25519 -s "https://sparkle-project.org" \
-                -w - -U \
-            || true
-
-      - name: Build .app + appcast
-        env:
-          VERSION: ${{ github.ref_name }}
-        run: |
-          # Strip the leading "v" so VERSION matches the CFBundleShortVersionString.
-          export VERSION="${VERSION#v}"
-          ./scripts/build-app.sh
-
-      - name: Create release
-        uses: softprops/action-gh-release@v2
-        with:
-          files: |
-            .build/app/leash-*-macos.zip
-          generate_release_notes: true
-          draft: false
-
-      - name: Publish appcast to main
-        if: ${{ hashFiles('appcast.xml') != '' }}
-        run: |
-          git config user.name  "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git fetch origin main
-          git checkout main
-          git add appcast.xml
-          if ! git diff --staged --quiet; then
-            git commit -m "appcast: ${{ github.ref_name }}"
-            git push origin main
-          fi
+      - run: sudo xcode-select -s /Applications/Xcode_15.4.app
+      - run: swift build -c release --arch arm64 --arch x86_64
