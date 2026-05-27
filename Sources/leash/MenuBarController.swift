@@ -3,8 +3,10 @@ import AppKit
 final class MenuBarController {
     private let statusItem: NSStatusItem
     private var launchItem: NSMenuItem!
+    private let updates: UpdateController
 
-    init() {
+    init(updates: UpdateController) {
+        self.updates = updates
         statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
         if let button = statusItem.button {
             button.title = "🐕"
@@ -27,6 +29,9 @@ final class MenuBarController {
         refreshLaunchItem()
         menu.addItem(.separator())
 
+        let check = NSMenuItem(title: "Check for Updates…", action: #selector(UpdateController.checkForUpdates(_:)), keyEquivalent: "")
+        check.target = updates
+        menu.addItem(check)
         addItem(menu, title: "Open project on GitHub", selector: #selector(openGitHub))
         menu.addItem(.separator())
 

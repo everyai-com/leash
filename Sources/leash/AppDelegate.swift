@@ -5,11 +5,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var server: HookServer!
     private var focus: FocusManager!
     private var overlay: OverlayController!
+    private var updates: UpdateController!
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         focus = FocusManager()
         overlay = OverlayController(focus: focus)
-        menuBar = MenuBarController()
+        updates = UpdateController()
+        menuBar = MenuBarController(updates: updates)
 
         server = HookServer(
             onStop: { [weak self] event in

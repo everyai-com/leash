@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<rss version="2.0" xmlns:sparkle="http://www.andymatuschak.org/xml-namespaces/sparkle">
+  <channel>
+    <title>leash</title>
+    <link>https://raw.githubusercontent.com/everyai-com/leash/main/appcast.xml</link>
+    <description>Auto-update feed for leash.</description>
+    <language>en</language>
+    <item>
+      <title>Version 0.4.0</title>
+      <pubDate>Wed, 27 May 2026 17:46:30 +0000</pubDate>
+      <sparkle:version>0.4.0</sparkle:version>
+      <sparkle:shortVersionString>0.4.0</sparkle:shortVersionString>
+      <sparkle:minimumSystemVersion>13.0</sparkle:minimumSystemVersion>
+      <enclosure
+        url="https://github.com/everyai-com/leash/releases/download/v0.4.0/leash-0.4.0-macos.zip"
+        length="2977486"
+        type="application/octet-stream"
+        sparkle:edSignature="bensm8wkA4ihSCQmmtN8RD/8gmQjiYsSXDFFyVfOvAQmfNqLEgvLyD/8PzPVRG6whVPqspjH95ydeM4aj6knCw==" length="2977486" />
+    </item>
+  </channel>
+</rss>

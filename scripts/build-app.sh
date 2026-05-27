@@ -37,6 +37,21 @@ cp "$BIN_PATH" "$APP/Contents/MacOS/$NAME"
 chmod +x "$APP/Contents/MacOS/$NAME"
 cp Resources/AppIcon.icns "$APP/Contents/Resources/AppIcon.icns"
 
+# SPM-built binaries lack the standard .app rpath; add it so embedded
+# frameworks (Sparkle) resolve at runtime.
+install_name_tool -add_rpath "@executable_path/../Frameworks" \
+  "$APP/Contents/MacOS/$NAME" 2>/dev/null || true
+
+# Embed Sparkle.framework for auto-update support
+SPARKLE_FRAMEWORK=".build/artifacts/sparkle/Sparkle/Sparkle.xcframework/macos-arm64_x86_64/Sparkle.framework"
+if [[ -d "$SPARKLE_FRAMEWORK" ]]; then
+  mkdir -p "$APP/Contents/Frameworks"
+  cp -R "$SPARKLE_FRAMEWORK" "$APP/Contents/Frameworks/"
+  echo "→ Embedded Sparkle.framework"
+else
+  echo "⚠  Sparkle framework not found at $SPARKLE_FRAMEWORK (run 'swift package resolve')"
+fi
+
 cat > "$APP/Contents/Info.plist" <<PLIST
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
@@ -58,6 +73,16 @@ cat > "$APP/Contents/Info.plist" <<PLIST
   <key>NSSupportsSuddenTermination</key><false/>
   <key>NSAppleEventsUsageDescription</key>
   <string>leash uses Apple Events to bring your terminal back to the front when Claude finishes.</string>
+  <key>SUFeedURL</key>
+  <string>https://raw.githubusercontent.com/everyai-com/leash/main/appcast.xml</string>
+  <key>SUPublicEDKey</key>
+  <string>Dl18Rp8SmQvfBNqGJX/Dia/phdxATd9ClksOVU+x7uc=</string>
+  <key>SUEnableInstallerLauncherService</key>
+  <true/>
+  <key>SUEnableAutomaticChecks</key>
+  <true/>
+  <key>SUScheduledCheckInterval</key>
+  <integer>3600</integer>
 </dict>
 </plist>
 PLIST
@@ -110,7 +135,46 @@ rm -f "$ZIP"
 ditto -c -k --sequesterRsrc --keepParent "$NAME.app" "$ZIP"
 cd - >/dev/null
 
+# Sparkle ed25519 signature for auto-update
+SPARKLE_SIGN="$PWD/.build/artifacts/sparkle/Sparkle/bin/sign_update"
+SIG_OUT=""
+if [[ -x "$SPARKLE_SIGN" ]]; then
+  SIG_OUT="$("$SPARKLE_SIGN" "$BUILD_DIR/$ZIP" || true)"
+  echo "→ Sparkle signature:"
+  echo "    $SIG_OUT"
+fi
+
+# Update appcast.xml with this version's entry
+ZIP_SIZE=$(stat -f%z "$BUILD_DIR/$ZIP")
+PUB_DATE=$(date -u "+%a, %d %b %Y %H:%M:%S +0000")
+APPCAST="appcast.xml"
+cat > "$APPCAST" <<XML
+<?xml version="1.0" encoding="utf-8"?>
+<rss version="2.0" xmlns:sparkle="http://www.andymatuschak.org/xml-namespaces/sparkle">
+  <channel>
+    <title>leash</title>
+    <link>https://raw.githubusercontent.com/everyai-com/leash/main/appcast.xml</link>
+    <description>Auto-update feed for leash.</description>
+    <language>en</language>
+    <item>
+      <title>Version $VERSION</title>
+      <pubDate>$PUB_DATE</pubDate>
+      <sparkle:version>$VERSION</sparkle:version>
+      <sparkle:shortVersionString>$VERSION</sparkle:shortVersionString>
+      <sparkle:minimumSystemVersion>13.0</sparkle:minimumSystemVersion>
+      <enclosure
+        url="https://github.com/everyai-com/leash/releases/download/v$VERSION/$ZIP"
+        length="$ZIP_SIZE"
+        type="application/octet-stream"
+        $SIG_OUT />
+    </item>
+  </channel>
+</rss>
+XML
+echo "→ Wrote $APPCAST"
+
 echo
 echo "Built:"
 echo "  $APP"
 echo "  $BUILD_DIR/$ZIP"
+echo "  $APPCAST"
