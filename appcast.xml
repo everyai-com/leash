@@ -7,15 +7,15 @@
     <language>en</language>
     <item>
       <title>Version 0.4.0</title>
-      <pubDate>Wed, 27 May 2026 17:46:30 +0000</pubDate>
+      <pubDate>Wed, 27 May 2026 17:48:16 +0000</pubDate>
       <sparkle:version>0.4.0</sparkle:version>
       <sparkle:shortVersionString>0.4.0</sparkle:shortVersionString>
       <sparkle:minimumSystemVersion>13.0</sparkle:minimumSystemVersion>
       <enclosure
         url="https://github.com/everyai-com/leash/releases/download/v0.4.0/leash-0.4.0-macos.zip"
-        length="2977486"
+        length="2644653"
         type="application/octet-stream"
-        sparkle:edSignature="bensm8wkA4ihSCQmmtN8RD/8gmQjiYsSXDFFyVfOvAQmfNqLEgvLyD/8PzPVRG6whVPqspjH95ydeM4aj6knCw==" length="2977486" />
+        ERROR! Signing key not found for account ed25519. Please run generate_keys tool first or provide key with --ed-key-file <private_key_file> />
     </item>
   </channel>
 </rss>
