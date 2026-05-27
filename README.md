@@ -31,9 +31,14 @@ Go full brain-rot mode. The leash pulls you back.
 
 1. Grab the latest `leash-*-macos.zip` from [Releases](https://github.com/everyai-com/leash/releases).
 2. Unzip → drag `leash.app` to `/Applications`.
-3. First launch: macOS will say it's from an unidentified developer. Right-click → **Open**, then **Open** again.
-4. Click the 🐕 in your menu bar → **Install Claude Code hooks**.
-5. Optionally → **Launch at login**.
+3. **Remove the Gatekeeper warning** (one-time, paste into Terminal):
+   ```bash
+   xattr -d com.apple.quarantine /Applications/leash.app
+   ```
+   Without this, macOS will say "leash cannot be opened because Apple cannot check it for malicious software." This command tells macOS you trust the download. (We're working on full notarization to remove this step.)
+4. Double-click `leash.app` to launch.
+5. Click the 🐕 in your menu bar → **Install Claude Code hooks**.
+6. Optionally → **Launch at login**.
 
 ### Build from source
 
