@@ -13,6 +13,18 @@ Long-running AI agents broke the human attention loop. You can't focus on anythi
 
 Go full brain-rot mode. The leash pulls you back.
 
+## Works with
+
+- **Claude Code** — first-class. One click installs `Stop` / `Notification` / `UserPromptSubmit` hooks.
+- **Codex, aider, gemini-cli, any CLI** — via the universal wrapper:
+  ```bash
+  leash watch -- codex
+  leash watch -- aider --model gpt-4o
+  leash watch -- python long_train.py
+  ```
+  When the wrapped command exits, leash fires the same overlay.
+- **Cursor / native IDE agents** — not yet (no public hook API). Use `leash watch` around any terminal commands they spawn.
+
 ## Install
 
 ### Download the .app (recommended)
@@ -46,7 +58,12 @@ If the overlay shows but doesn't pull you to the terminal, you skipped one of th
 - Each request carries `$PPID` so leash walks up the process tree to find which terminal hosted Claude — and focuses exactly that one.
 - Skips the seize when you're already looking at Claude (no double-yanks mid-conversation).
 
-No accounts. No telemetry. No network egress. All local.
+## Trust
+
+- **No accounts. No telemetry. No network egress.** The only network code in the whole app binds a listener to `127.0.0.1:7869` and POSTs to `127.0.0.1`. Grep the source.
+- **No third-party dependencies.** Pure Swift + AppKit. The entire SBOM is "macOS".
+- **Open source under MIT.** See [`SECURITY.md`](SECURITY.md) for the threat model and how to report issues.
+- Releases are signed with **SAPHAARE LABS PRIVATE LIMITED**'s Developer ID and (soon) notarized by Apple.
 
 ## Design principles
 

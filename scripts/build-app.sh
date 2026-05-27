@@ -62,8 +62,46 @@ cat > "$APP/Contents/Info.plist" <<PLIST
 </plist>
 PLIST
 
-echo "→ Ad-hoc signing (so it launches without quarantine fights)"
-codesign --force --deep --sign - "$APP" >/dev/null
+# Prefer a real Developer ID cert if one is installed; fall back to ad-hoc.
+SIGN_IDENTITY="${SIGN_IDENTITY:-}"
+if [[ -z "$SIGN_IDENTITY" ]]; then
+  SIGN_IDENTITY="$(security find-identity -v -p codesigning 2>/dev/null \
+    | awk -F'"' '/Developer ID Application/ {print $2; exit}')"
+fi
+if [[ -z "$SIGN_IDENTITY" ]]; then
+  SIGN_IDENTITY="-"
+  echo "→ Ad-hoc signing (no Developer ID found)"
+else
+  echo "→ Signing with: $SIGN_IDENTITY"
+fi
+
+# Hardened-runtime entitlements needed for Apple Events + notarization.
+ENTITLEMENTS="$BUILD_DIR/leash.entitlements"
+cat > "$ENTITLEMENTS" <<'EOF'
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>com.apple.security.automation.apple-events</key><true/>
+  <key>com.apple.security.network.server</key><true/>
+</dict>
+</plist>
+EOF
+
+codesign --force --deep --options runtime \
+  --entitlements "$ENTITLEMENTS" \
+  --sign "$SIGN_IDENTITY" "$APP" >/dev/null
+
+# Optional: notarize if creds are configured via `xcrun notarytool store-credentials`.
+if [[ -n "${NOTARY_PROFILE:-}" ]]; then
+  echo "→ Notarizing (profile: $NOTARY_PROFILE)"
+  NOTARY_ZIP="$BUILD_DIR/leash-notarize.zip"
+  ditto -c -k --keepParent "$APP" "$NOTARY_ZIP"
+  xcrun notarytool submit "$NOTARY_ZIP" \
+    --keychain-profile "$NOTARY_PROFILE" --wait
+  xcrun stapler staple "$APP"
+  rm -f "$NOTARY_ZIP"
+fi
 
 echo "→ Zipping for distribution"
 cd "$BUILD_DIR"
