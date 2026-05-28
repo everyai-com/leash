@@ -13,7 +13,7 @@ final class ControlPanel: NSObject {
         let size = NSSize(width: 420, height: 360)
         window = NSWindow(
             contentRect: NSRect(origin: .zero, size: size),
-            styleMask: [.titled, .closable, .fullSizeContentView],
+            styleMask: [.titled, .closable, .miniaturizable, .fullSizeContentView],
             backing: .buffered,
             defer: false
         )

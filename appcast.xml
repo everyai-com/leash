@@ -6,16 +6,16 @@
     <description>Auto-update feed for leash.</description>
     <language>en</language>
     <item>
-      <title>Version 0.4.7</title>
-      <pubDate>Thu, 28 May 2026 04:40:44 +0000</pubDate>
-      <sparkle:version>0.4.7</sparkle:version>
-      <sparkle:shortVersionString>0.4.7</sparkle:shortVersionString>
+      <title>Version 0.4.8</title>
+      <pubDate>Thu, 28 May 2026 04:42:10 +0000</pubDate>
+      <sparkle:version>0.4.8</sparkle:version>
+      <sparkle:shortVersionString>0.4.8</sparkle:shortVersionString>
       <sparkle:minimumSystemVersion>13.0</sparkle:minimumSystemVersion>
       <enclosure
-        url="https://github.com/everyai-com/leash/releases/download/v0.4.7/leash-0.4.7-macos.zip"
-        length="2985051"
+        url="https://github.com/everyai-com/leash/releases/download/v0.4.8/leash-0.4.8-macos.zip"
+        length="2985056"
         type="application/octet-stream"
-        sparkle:edSignature="z+ZrwuzswrbtqXVORBYoI9xKmBRuHVVii6+HK/aM+f1RZkUTlHcV3Y9vcF+FHmfgPpL9mHeqOKUNRke2s3+iBA==" length="2985051" />
+        sparkle:edSignature="mj9nBPT5CPG8u13MRz97X/IF+GAFh3dheYzcUtOqFzD4a7FBnMROICRTuxf3R8TFve+LGauokVjzhUtGyY1JAg==" length="2985056" />
     </item>
   </channel>
 </rss>
