@@ -7,38 +7,22 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var overlay: OverlayController!
     private var updates: UpdateController!
     private var panel: ControlPanel!
+    private var coordinator: Coordinator!
 
     func applicationDidFinishLaunching(_ notification: Notification) {
+        Settings.registerDefaults()
+
         focus = FocusManager()
-        overlay = OverlayController(focus: focus)
+        overlay = OverlayController()
         updates = UpdateController()
         panel = ControlPanel(updates: updates)
         NSApp.mainMenu = MainMenu.build(updates: updates, panel: panel)
         menuBar = MenuBarController(updates: updates)
+        coordinator = Coordinator(focus: focus, overlay: overlay, menuBar: menuBar)
 
-        server = HookServer(
-            onStop: { [weak self] event in
-                DispatchQueue.main.async {
-                    guard let self else { return }
-                    NSLog("leash: /stop fired ppid=\(event.ppid.map(String.init) ?? "nil") cwd=\(event.cwd ?? "?") frontmost=\(NSWorkspace.shared.frontmostApplication?.bundleIdentifier ?? "?")")
-                    if self.focus.isAlreadyEngaged(withHookPID: event.ppid) {
-                        // User is already looking at Claude — don't yank them.
-                        NSLog("leash: already engaged with Claude — not seizing")
-                        return
-                    }
-                    self.focus.snapshotFrontmost()
-                    self.overlay.seize(event: event)
-                    self.menuBar.setWaiting(true)
-                }
-            },
-            onSubmit: { [weak self] _ in
-                DispatchQueue.main.async {
-                    self?.overlay.release()
-                    self?.focus.restorePrevious()
-                    self?.menuBar.setWaiting(false)
-                }
-            }
-        )
+        server = HookServer { [weak self] kind, event in
+            self?.coordinator.handle(kind, event)
+        }
         do {
             try server.start(port: 7869)
         } catch {

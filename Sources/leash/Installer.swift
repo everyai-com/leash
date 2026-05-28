@@ -10,6 +10,7 @@ enum Installer {
 
     static func install() {
         let stopCmd = curlCommand(path: "/stop")
+        let notifyCmd = curlCommand(path: "/notify")
         let submitCmd = curlCommand(path: "/submit")
 
         var settings = loadSettings()
@@ -20,7 +21,7 @@ enum Installer {
         ]]
         hooks["Notification"] = [[
             "matcher": "",
-            "hooks": [["type": "command", "command": stopCmd]]
+            "hooks": [["type": "command", "command": notifyCmd]]
         ]]
         hooks["UserPromptSubmit"] = [[
             "matcher": "",

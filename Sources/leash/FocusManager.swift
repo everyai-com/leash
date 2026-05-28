@@ -15,6 +15,10 @@ final class FocusManager {
         previousApp = nil
     }
 
+    func clearPrevious() {
+        previousApp = nil
+    }
+
     /// Walk up the process tree from `pid` and pick the best app to activate.
     /// Priority: Claude desktop app > Cursor/VS Code > terminal emulator >
     /// any regular ancestor > a running Claude.app even if not in the chain.

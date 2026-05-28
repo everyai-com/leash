@@ -3,21 +3,26 @@ import AudioToolbox
 import QuartzCore
 
 final class OverlayController {
+    /// Called when the user accepts (⏎ / click). Carries the hook PID so the
+    /// coordinator can activate the right terminal/app.
+    var onEngage: ((Int32?) -> Void)?
+    /// Called when the user snoozes (Esc).
+    var onSnooze: (() -> Void)?
+
     private var windows: [NSWindow] = []
     private var soundTimer: Timer?
-    private let focus: FocusManager
     private var pendingPID: Int32?
-    private var startedAt: Date?
     private var eventMonitor: Any?
-
-    init(focus: FocusManager) {
-        self.focus = focus
-    }
+    private var resolved = false
+    private var rings = 0
+    /// Stop ringing after ~90s so a forgotten overlay doesn't ring forever.
+    private let maxRings = 12
 
     func seize(event: HookEvent) {
         release()
         pendingPID = event.ppid
-        startedAt = Date()
+        resolved = false
+        rings = 0
 
         for screen in NSScreen.screens {
             let window = NSWindow(
@@ -36,7 +41,8 @@ final class OverlayController {
             let view = OverlayView(
                 message: event.message,
                 cwd: event.cwd,
-                onEngage: { [weak self] in self?.engage() }
+                onEngage: { [weak self] in self?.fireEngage() },
+                onSnooze: { [weak self] in self?.fireSnooze() }
             )
             window.contentView = view
             window.makeKeyAndOrderFront(nil)
@@ -46,22 +52,26 @@ final class OverlayController {
         }
 
         NSApp.activate(ignoringOtherApps: true)
-        playSound()
-        soundTimer = Timer.scheduledTimer(withTimeInterval: 8, repeats: true) { [weak self] _ in
-            self?.playSound()
+        if Settings.soundEnabled {
+            playSound()
+            soundTimer = Timer.scheduledTimer(withTimeInterval: 8, repeats: true) { [weak self] _ in
+                self?.playSound()
+            }
         }
-        sendMediaKey()
+        if Settings.pauseMedia { sendMediaKey() }
 
         // Catch ⏎/Esc/click anywhere across all overlay windows (no matter
         // which display has the key window).
         eventMonitor = NSEvent.addLocalMonitorForEvents(matching: [.keyDown, .leftMouseDown]) { [weak self] event in
             guard let self else { return event }
             if event.type == .keyDown {
-                if event.keyCode == 36 || event.keyCode == 76 || event.keyCode == 53 {
-                    self.engage(); return nil
+                if event.keyCode == 36 || event.keyCode == 76 {      // return / numpad enter
+                    self.fireEngage(); return nil
+                } else if event.keyCode == 53 {                       // escape
+                    self.fireSnooze(); return nil
                 }
             } else if event.type == .leftMouseDown {
-                self.engage(); return nil
+                self.fireEngage(); return nil
             }
             return event
         }
@@ -76,20 +86,32 @@ final class OverlayController {
         }
         for window in windows { window.orderOut(nil) }
         windows.removeAll()
-        startedAt = nil
     }
 
-    private func engage() {
+    private func fireEngage() {
+        guard !resolved else { return }
+        resolved = true
         let pid = pendingPID
         pendingPID = nil
         release()
-        // Activate the target app directly. Don't call NSApp.hide first —
-        // hiding surfaces whatever app was below leash, which races our
-        // activate call and usually wins.
-        focus.activateTerminal(forPID: pid)
+        onEngage?(pid)
+    }
+
+    private func fireSnooze() {
+        guard !resolved else { return }
+        resolved = true
+        pendingPID = nil
+        release()
+        onSnooze?()
     }
 
     private func playSound() {
+        guard rings < maxRings else {
+            soundTimer?.invalidate()
+            soundTimer = nil
+            return
+        }
+        rings += 1
         AudioServicesPlayAlertSound(SystemSoundID(kSystemSoundID_UserPreferredAlert))
     }
 
@@ -119,11 +141,13 @@ final class OverlayController {
 
 private final class OverlayView: NSView {
     private let onEngage: () -> Void
+    private let onSnooze: () -> Void
     private let card = NSView()
     private let accent = NSColor(calibratedRed: 1.0, green: 0.36, blue: 0.24, alpha: 1.0)
 
-    init(message: String?, cwd: String?, onEngage: @escaping () -> Void) {
+    init(message: String?, cwd: String?, onEngage: @escaping () -> Void, onSnooze: @escaping () -> Void) {
         self.onEngage = onEngage
+        self.onSnooze = onSnooze
         super.init(frame: .zero)
         wantsLayer = true
         layer?.backgroundColor = NSColor.black.withAlphaComponent(0.55).cgColor
@@ -228,7 +252,7 @@ private final class OverlayView: NSView {
         }
 
         // Call-to-action chip
-        let chip = ChipView(title: "Press ⏎ to engage")
+        let chip = ChipView(title: "Press ⏎ to engage   ·   Esc to dismiss")
         chip.translatesAutoresizingMaskIntoConstraints = false
 
         let textStack = NSStackView(views: [kickerRow, title, subtitle] + extras)
@@ -292,13 +316,12 @@ private final class OverlayView: NSView {
         if event.keyCode == 36 || event.keyCode == 76 { // return / numpad
             onEngage()
         } else if event.keyCode == 53 { // escape
-            onEngage() // treat as engage for now; we'll add snooze later
+            onSnooze()
         }
     }
 
     override func mouseDown(with event: NSEvent) {
-        let point = convert(event.locationInWindow, from: nil)
-        if card.frame.contains(point) { onEngage() }
+        onEngage()
     }
 }
 

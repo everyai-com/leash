@@ -6,11 +6,15 @@ final class ControlPanel: NSObject {
     private let window: NSWindow
     private let updates: UpdateController
     private var launchToggle: NSButton!
+    private var soundToggle: NSButton!
+    private var returnToggle: NSButton!
+    private var notifyToggle: NSButton!
+    private var mediaToggle: NSButton!
 
     init(updates: UpdateController) {
         self.updates = updates
 
-        let size = NSSize(width: 420, height: 360)
+        let size = NSSize(width: 460, height: 560)
         window = NSWindow(
             contentRect: NSRect(origin: .zero, size: size),
             styleMask: [.titled, .closable, .miniaturizable, .fullSizeContentView],
@@ -36,6 +40,10 @@ final class ControlPanel: NSObject {
 
     private func refresh() {
         launchToggle.state = LoginItem.isEnabled ? .on : .off
+        soundToggle.state  = Settings.soundEnabled ? .on : .off
+        returnToggle.state = Settings.autoReturnOnSubmit ? .on : .off
+        notifyToggle.state = Settings.seizeOnNotification ? .on : .off
+        mediaToggle.state  = Settings.pauseMedia ? .on : .off
     }
 
     private func buildContent(_ size: NSSize) -> NSView {
@@ -52,22 +60,36 @@ final class ControlPanel: NSObject {
         let install   = button("Install Claude Code hooks",   #selector(installHooks))
         let uninstall = button("Uninstall hooks",             #selector(uninstallHooks))
         launchToggle  = checkbox("Launch at login",           #selector(toggleLaunch))
+
+        let behaviorHeader = sectionHeader("Behavior")
+        soundToggle  = checkbox("Ring a sound while waiting",            #selector(toggleSound))
+        returnToggle = checkbox("Send me back to my app after I submit", #selector(toggleReturn))
+        notifyToggle = checkbox("Also alert on permission prompts",      #selector(toggleNotify))
+        mediaToggle  = checkbox("Pause media (YouTube, Spotify…)",       #selector(toggleMedia))
+
         let check     = button("Check for updates…",          #selector(checkForUpdates))
         let github    = button("Open project on GitHub",      #selector(openGitHub))
         let quit      = button("Quit leash",                  #selector(quitApp))
         quit.bezelColor = .systemRed
 
-        let hint = NSTextField(wrappingLabelWithString: "Tip: leash lives in your menu bar (🔔 icon, top right). If your menu bar is too full, this window is always here as a backup — just open leash.app again.")
+        let hint = NSTextField(wrappingLabelWithString: "Tip: leash also lives in your menu bar (🔔 icon, top right). If your menu bar is too full, reopen leash.app to get back here.")
         hint.font = .systemFont(ofSize: 11)
         hint.textColor = .tertiaryLabelColor
         hint.maximumNumberOfLines = 0
 
-        let stack = NSStackView(views: [title, sub, install, uninstall, launchToggle, check, github, quit, hint])
+        let stack = NSStackView(views: [
+            title, sub,
+            install, uninstall, launchToggle,
+            behaviorHeader, soundToggle, returnToggle, notifyToggle, mediaToggle,
+            check, github, quit, hint,
+        ])
         stack.orientation = .vertical
         stack.alignment = .leading
-        stack.spacing = 10
-        stack.setCustomSpacing(20, after: sub)
-        stack.setCustomSpacing(20, after: quit)
+        stack.spacing = 9
+        stack.setCustomSpacing(18, after: sub)
+        stack.setCustomSpacing(16, after: launchToggle)
+        stack.setCustomSpacing(16, after: mediaToggle)
+        stack.setCustomSpacing(18, after: quit)
         stack.translatesAutoresizingMaskIntoConstraints = false
         root.addSubview(stack)
 
@@ -78,6 +100,13 @@ final class ControlPanel: NSObject {
         ])
 
         return root
+    }
+
+    private func sectionHeader(_ text: String) -> NSTextField {
+        let label = NSTextField(labelWithString: text.uppercased())
+        label.font = .systemFont(ofSize: 11, weight: .semibold)
+        label.textColor = .secondaryLabelColor
+        return label
     }
 
     private func button(_ title: String, _ action: Selector) -> NSButton {
@@ -95,6 +124,10 @@ final class ControlPanel: NSObject {
     @objc private func installHooks()    { Installer.install() }
     @objc private func uninstallHooks()  { Installer.uninstall() }
     @objc private func toggleLaunch()    { LoginItem.toggle(); refresh() }
+    @objc private func toggleSound()     { Settings.soundEnabled = (soundToggle.state == .on) }
+    @objc private func toggleReturn()    { Settings.autoReturnOnSubmit = (returnToggle.state == .on) }
+    @objc private func toggleNotify()    { Settings.seizeOnNotification = (notifyToggle.state == .on) }
+    @objc private func toggleMedia()     { Settings.pauseMedia = (mediaToggle.state == .on) }
     @objc private func checkForUpdates() { updates.checkForUpdates(self) }
     @objc private func openGitHub()      { NSWorkspace.shared.open(URL(string: "https://github.com/everyai-com/leash")!) }
     @objc private func quitApp()         { NSApp.terminate(self) }

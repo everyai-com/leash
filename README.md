@@ -8,8 +8,10 @@ Long-running AI agents broke the human attention loop. You can't focus on anythi
 
 1. Hooks Claude Code's `Stop` and `Notification` events.
 2. Slams a full-screen overlay across every display, plays an alert, pauses media.
-3. Press `⏎` → overlay vanishes, the originating terminal jumps to the front, your cursor is in the prompt.
+3. Press `⏎` to engage → overlay vanishes, the originating terminal/app jumps to the front, your cursor is in the prompt. (Or `Esc` to dismiss and stay where you are.)
 4. Type your next instruction. The moment you submit, leash re-focuses whatever you were doing before.
+
+It tracks a small state machine (`idle → waiting → engaged`) so it only pulls you back when it actually seized you — submitting a prompt while working normally never yanks you anywhere. Repeated finish events while the overlay is already up are de-duplicated, and everything is tunable from the control window (sound, auto-return, alert-on-permission-prompts, media pause).
 
 Go full brain-rot mode. The leash pulls you back.
 

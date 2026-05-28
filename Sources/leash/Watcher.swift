@@ -46,13 +46,15 @@ enum Watcher {
         exit(code)
     }
 
+    /// Keep signal sources alive for the lifetime of the process.
+    private static var signalSources: [DispatchSourceSignal] = []
+
     private static func forward(signal sig: Int32, to pid: pid_t) {
+        Foundation.signal(sig, SIG_IGN)
         let src = DispatchSource.makeSignalSource(signal: sig, queue: .global())
         src.setEventHandler { kill(pid, sig) }
         src.resume()
-        // Prevent the source from being deallocated.
-        Unmanaged.passRetained(src).retain()
-        Foundation.signal(sig, SIG_IGN)
+        signalSources.append(src)
     }
 
     private static func fireStop(ppid: pid_t, cwd: String, message: String) {
