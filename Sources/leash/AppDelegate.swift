@@ -20,8 +20,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             onStop: { [weak self] event in
                 DispatchQueue.main.async {
                     guard let self else { return }
+                    NSLog("leash: /stop fired ppid=\(event.ppid.map(String.init) ?? "nil") cwd=\(event.cwd ?? "?") frontmost=\(NSWorkspace.shared.frontmostApplication?.bundleIdentifier ?? "?")")
                     if self.focus.isAlreadyEngaged(withHookPID: event.ppid) {
                         // User is already looking at Claude — don't yank them.
+                        NSLog("leash: already engaged with Claude — not seizing")
                         return
                     }
                     self.focus.snapshotFrontmost()

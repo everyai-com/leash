@@ -18,16 +18,26 @@ final class FocusManager {
     /// Walk up the process tree from `pid` and activate the first ancestor that
     /// corresponds to a running NSApplication (i.e. the terminal hosting Claude).
     func activateTerminal(forPID pid: Int32?) {
-        guard var current = pid else { return }
-        for _ in 0..<8 {
+        guard var current = pid else {
+            NSLog("leash: activateTerminal called with nil pid")
+            return
+        }
+        for step in 0..<12 {
+            let appName = NSRunningApplication(processIdentifier: current)?.bundleIdentifier ?? "?"
+            NSLog("leash: ppid-walk step=\(step) pid=\(current) bundle=\(appName)")
             if let app = NSRunningApplication(processIdentifier: current),
                app.activationPolicy == .regular {
+                NSLog("leash: activating \(app.bundleIdentifier ?? "?") (pid \(current))")
                 activate(app)
                 return
             }
-            guard let parent = parentPID(of: current), parent > 1 else { return }
+            guard let parent = parentPID(of: current), parent > 1 else {
+                NSLog("leash: no parent for pid \(current); giving up")
+                return
+            }
             current = parent
         }
+        NSLog("leash: ppid-walk exhausted without finding a regular app")
     }
 
     /// True if the frontmost app is the terminal hosting `pid` (i.e. user is
