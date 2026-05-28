@@ -28,7 +28,7 @@ final class ControlPanel: NSObject {
         window.contentView = buildContent(size)
     }
 
-    func show() {
+    @objc func show() {
         NSApp.activate(ignoringOtherApps: true)
         window.makeKeyAndOrderFront(nil)
         refresh()

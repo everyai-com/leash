@@ -13,6 +13,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         overlay = OverlayController(focus: focus)
         updates = UpdateController()
         panel = ControlPanel(updates: updates)
+        NSApp.mainMenu = MainMenu.build(updates: updates, panel: panel)
         menuBar = MenuBarController(updates: updates)
 
         server = HookServer(
