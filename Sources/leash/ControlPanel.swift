@@ -25,7 +25,7 @@ final class ControlPanel: NSObject {
 
         super.init()
 
-        window.contentView = buildContent(size: size)
+        window.contentView = buildContent(size)
     }
 
     func show() {
