@@ -39,5 +39,34 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         } catch {
             NSLog("leash: server failed to start: \(error)")
         }
+
+        showFirstLaunchAlertIfNeeded()
+    }
+
+    private func showFirstLaunchAlertIfNeeded() {
+        let key = "hasShownWelcome"
+        guard !UserDefaults.standard.bool(forKey: key) else { return }
+        UserDefaults.standard.set(true, forKey: key)
+
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) { [weak self] in
+            let alert = NSAlert()
+            alert.messageText = "leash is running."
+            alert.informativeText = """
+            Look for the 🔔 icon at the top-right of your screen — that's leash.
+
+            Click it, then choose:
+              1. Install Claude Code hooks
+              2. Launch at login
+
+            That's all the setup. From here on, leash pulls you back the moment Claude finishes.
+            """
+            alert.addButton(withTitle: "Show me where")
+            alert.addButton(withTitle: "OK")
+            NSApp.activate(ignoringOtherApps: true)
+            let response = alert.runModal()
+            if response == .alertFirstButtonReturn {
+                self?.menuBar?.flashIcon()
+            }
+        }
     }
 }

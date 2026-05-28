@@ -9,7 +9,8 @@ final class MenuBarController {
         self.updates = updates
         statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
         if let button = statusItem.button {
-            button.title = "🐕"
+            button.image = MenuBarController.icon(waiting: false)
+            button.imagePosition = .imageOnly
             button.toolTip = "leash — idle"
         }
 
@@ -41,11 +42,38 @@ final class MenuBarController {
         statusItem.menu = menu
     }
 
+    /// Briefly blink the menu-bar icon so a new user can spot it.
+    func flashIcon() {
+        guard let button = statusItem.button else { return }
+        let original = button.image
+        var pulses = 0
+        let timer = Timer.scheduledTimer(withTimeInterval: 0.25, repeats: true) { t in
+            button.image = (pulses % 2 == 0) ? nil : original
+            pulses += 1
+            if pulses >= 10 {
+                button.image = original
+                t.invalidate()
+            }
+        }
+        RunLoop.main.add(timer, forMode: .common)
+    }
+
     func setWaiting(_ waiting: Bool) {
         DispatchQueue.main.async {
-            self.statusItem.button?.title = waiting ? "🔴" : "🐕"
+            self.statusItem.button?.image = MenuBarController.icon(waiting: waiting)
             self.statusItem.button?.toolTip = waiting ? "leash — waiting for you" : "leash — idle"
         }
+    }
+
+    private static func icon(waiting: Bool) -> NSImage? {
+        // SF Symbol that renders cleanly as a template image in the menu bar
+        // and never gets clipped the way emoji can.
+        let symbol = waiting ? "bell.badge.fill" : "bell.fill"
+        let config = NSImage.SymbolConfiguration(pointSize: 15, weight: .semibold)
+        let image = NSImage(systemSymbolName: symbol, accessibilityDescription: "leash")?
+            .withSymbolConfiguration(config)
+        image?.isTemplate = true
+        return image
     }
 
     @discardableResult
