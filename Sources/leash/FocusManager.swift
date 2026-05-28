@@ -81,13 +81,45 @@ final class FocusManager {
         // AppKit path — works on older macOS, often blocked on 14+.
         app.activate(options: [.activateAllWindows])
 
-        // Reliable fallback: AppleScript by bundle id. Apple still honors this
-        // for cross-app activation when the calling process can't directly.
+        // In-process AppleScript so the Automation permission grant is for
+        // leash itself, not for /usr/bin/osascript. macOS prompts once; after
+        // the user grants, activations land reliably on every subsequent fire.
         guard let bid = app.bundleIdentifier else { return }
-        let task = Process()
-        task.launchPath = "/usr/bin/osascript"
-        task.arguments = ["-e", "tell application id \"\(bid)\" to activate"]
-        try? task.run()
+        let source = "tell application id \"\(bid)\" to activate"
+        var error: NSDictionary?
+        let script = NSAppleScript(source: source)
+        _ = script?.executeAndReturnError(&error)
+        if let error = error {
+            NSLog("leash: AppleScript activate failed for \(bid): \(error)")
+            // -1743 = errAEEventNotPermitted — user hasn't granted Automation
+            // for this target. Surface a one-time hint so they know what to do.
+            if let n = error[NSAppleScript.errorNumber] as? Int, n == -1743 {
+                Self.warnMissingAutomationPermission(for: bid)
+            }
+        }
+    }
+
+    private static var warnedBundles = Set<String>()
+    private static func warnMissingAutomationPermission(for bid: String) {
+        guard !warnedBundles.contains(bid) else { return }
+        warnedBundles.insert(bid)
+        DispatchQueue.main.async {
+            let alert = NSAlert()
+            alert.messageText = "leash needs permission to control \(bid)"
+            alert.informativeText = """
+            macOS blocked leash from bringing \(bid) forward. Open
+            System Settings → Privacy & Security → Automation and turn on
+            \(bid) under leash.
+            """
+            alert.addButton(withTitle: "Open System Settings")
+            alert.addButton(withTitle: "Later")
+            NSApp.activate(ignoringOtherApps: true)
+            if alert.runModal() == .alertFirstButtonReturn {
+                if let url = URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_Automation") {
+                    NSWorkspace.shared.open(url)
+                }
+            }
+        }
     }
 
     private func parentPID(of pid: Int32) -> Int32? {
