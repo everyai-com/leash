@@ -32,13 +32,13 @@ enum MainMenu {
         menu.addItem(settings)
         menu.addItem(.separator())
 
-        let install = NSMenuItem(title: "Install Claude Code hooks",
+        let install = NSMenuItem(title: "Connect my AI tools",
                                  action: #selector(InstallerProxy.install),
                                  keyEquivalent: "")
         install.target = InstallerProxy.shared
         menu.addItem(install)
 
-        let uninstall = NSMenuItem(title: "Uninstall hooks",
+        let uninstall = NSMenuItem(title: "Disconnect (remove hooks)",
                                    action: #selector(InstallerProxy.uninstall),
                                    keyEquivalent: "")
         uninstall.target = InstallerProxy.shared
@@ -137,7 +137,14 @@ enum MainMenu {
 
 final class InstallerProxy: NSObject {
     static let shared = InstallerProxy()
-    @objc func install()   { Installer.install() }
+    @objc func install() {
+        let summary = Installer.install()
+        let alert = NSAlert()
+        alert.messageText = "Connected"
+        alert.informativeText = summary
+        alert.addButton(withTitle: "Done")
+        alert.runModal()
+    }
     @objc func uninstall() { Installer.uninstall() }
 }
 

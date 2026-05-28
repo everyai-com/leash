@@ -1,12 +1,12 @@
 # leash
 
-**Yanks you back the moment Claude finishes — or asks a question.**
+**Yanks you back the moment your AI agent finishes — or needs you.**
 
 Long-running AI agents broke the human attention loop. You can't focus on anything else while waiting, because you don't know when they'll need you — so you babysit a terminal instead of getting your time back.
 
 `leash` is a tiny macOS menu-bar app that:
 
-1. Hooks Claude Code's `Stop` and `Notification` events.
+1. Hooks your agent's finish/needs-input events (Claude Code, Codex, or any command).
 2. Slams a full-screen overlay across every display, plays an alert, pauses media.
 3. Press `⏎` to engage → overlay vanishes, the originating terminal/app jumps to the front, your cursor is in the prompt. (Or `Esc` to dismiss and stay where you are.)
 4. Type your next instruction. The moment you submit, leash re-focuses whatever you were doing before.
@@ -17,15 +17,22 @@ Go full brain-rot mode. The leash pulls you back.
 
 ## Works with
 
-- **Claude Code** — first-class. One click installs `Stop` / `Notification` / `UserPromptSubmit` hooks.
-- **Codex, aider, gemini-cli, any CLI** — via the universal wrapper:
-  ```bash
-  leash watch -- codex
-  leash watch -- aider --model gpt-4o
-  leash watch -- python long_train.py
-  ```
-  When the wrapped command exits, leash fires the same overlay.
-- **Cursor / native IDE agents** — not yet (no public hook API). Use `leash watch` around any terminal commands they spawn.
+`leash` connects to every AI tool it detects in one step — click **Connect my AI tools** (or run `leash install`):
+
+| Tool | How | Status |
+|---|---|---|
+| **Claude Code** | `Stop` / `Notification` / `UserPromptSubmit` hooks in `~/.claude/settings.json` | ✅ auto |
+| **OpenAI Codex** | `notify` hook in `~/.codex/config.toml` (fires on `agent-turn-complete`) | ✅ auto (if installed) |
+| **Cursor / VS Code** | Run `claude` or `codex` in the built-in terminal — leash walks the process tree to the IDE window and focuses it | ✅ auto |
+| **aider, gemini-cli, any command** | Wrap it: `leash watch -- <cmd>` | ✅ universal |
+
+```bash
+leash watch -- aider --model gpt-4o
+leash watch -- gemini
+leash watch -- python long_train.py
+```
+
+> Cursor/VS Code's *own* built-in agent has no public "finished" hook, so leash can't follow it directly — but anything you run in their terminal works, and `leash watch` covers the rest.
 
 ## Install
 
@@ -35,7 +42,7 @@ Go full brain-rot mode. The leash pulls you back.
 curl -fsSL https://raw.githubusercontent.com/everyai-com/leash/main/install.sh | bash
 ```
 
-That's it. The script downloads the latest release, installs to `/Applications`, and launches. Then click the 🐕 in your menu bar → **Install Claude Code hooks** → **Launch at login**.
+That's it. The script downloads the latest release, installs to `/Applications`, and launches. Then in the window that opens (or the 🔔 menu-bar icon): **Connect my AI tools** → **Launch at login**.
 
 Future updates install themselves silently — you never run this script again.
 
@@ -70,9 +77,10 @@ If the overlay shows but doesn't pull you to the terminal, you skipped one of th
 ## How it works
 
 - A local HTTP listener on `127.0.0.1:7869`.
-- Three hook entries in `~/.claude/settings.json` (`Stop`, `Notification`, `UserPromptSubmit`) that `curl` it.
-- Each request carries `$PPID` so leash walks up the process tree to find which terminal hosted Claude — and focuses exactly that one.
-- Skips the seize when you're already looking at Claude (no double-yanks mid-conversation).
+- Hook entries that `curl` it: Claude Code's `Stop`/`Notification`/`UserPromptSubmit` in `~/.claude/settings.json`, and Codex's `notify` (via a tiny helper script in `~/.leash/`).
+- Each request carries `$PPID`, so leash walks up the process tree to find which app hosted the agent — terminal, Claude desktop app, Cursor, VS Code — and focuses exactly that one.
+- A small state machine (`idle → waiting → engaged`) means it only returns you when it actually pulled you in, and de-duplicates repeated finish events so subagents and parallel sessions don't spam the overlay.
+- Skips the seize entirely when you're already looking at the agent.
 
 ## Trust
 
@@ -83,21 +91,21 @@ If the overlay shows but doesn't pull you to the terminal, you skipped one of th
 
 ## Design principles
 
-- **Forced context switch, not notification.** Notifications fail the trust-to-disengage test.
-- **One opinionated escalation.** Settings come after we know the default works.
-- **Mac + Claude Code first.** Other tools/platforms are v2 plugins once the core proves itself.
+- **Forced context switch, not notification.** Notifications fail the trust-to-disengage test — you still glance at the terminal "just in case." A full-screen takeover means you can truly look away.
+- **Local-only, zero-config, zero-account.** It should work the second you install it, and never phone home.
+- **Opinionated defaults, escape hatches in the window.** It does the right thing out of the box; tune it only if you want to.
 
 ## Roadmap
 
-- Codex / Cursor / Aider hooks
-- Snooze key, per-source intensity
-- Phone push as a plugin
-- Linux/Windows ports
-- Custom icon + Homebrew cask
+- Snooze / "remind me in 5 min" key
+- Per-tool intensity (louder for Claude Code, quieter for a quick script)
+- Phone push as an optional plugin
+- Homebrew cask + Apple notarization
+- Linux / Windows ports
 
 ## Contributing
 
-Issues and PRs welcome. The whole app is <500 lines of Swift — easy to read in one sitting. Start at [`Sources/leash/AppDelegate.swift`](Sources/leash/AppDelegate.swift).
+Issues and PRs welcome. The whole app is a few hundred lines of dependency-free Swift — readable in one sitting. Start at [`Sources/leash/Coordinator.swift`](Sources/leash/Coordinator.swift) (the state machine) and [`Sources/leash/AppDelegate.swift`](Sources/leash/AppDelegate.swift). See [`CONTRIBUTING.md`](CONTRIBUTING.md).
 
 ## License
 

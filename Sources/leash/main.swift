@@ -5,7 +5,7 @@ let args = CommandLine.arguments.dropFirst()
 if let first = args.first {
     switch first {
     case "install":
-        Installer.install()
+        print(Installer.install())
         exit(0)
     case "uninstall":
         Installer.uninstall()
@@ -21,10 +21,12 @@ if let first = args.first {
 
         Usage:
           leash                       Launch the menu-bar app
-          leash install               Wire up Claude Code hooks (~/.claude/settings.json)
-          leash uninstall             Remove the hooks
+          leash install               Wire up every detected AI tool
+                                      (Claude Code hooks + Codex notify)
+          leash uninstall             Remove all leash hooks
           leash watch -- <cmd> ...    Run any command, fire the overlay when it exits
-                                      (works for codex, aider, gemini-cli, scripts...)
+                                      (works for aider, gemini-cli, scripts, or any
+                                       agent without a native hook)
         """)
         exit(0)
     default:

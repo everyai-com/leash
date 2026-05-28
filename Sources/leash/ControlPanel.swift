@@ -57,8 +57,8 @@ final class ControlPanel: NSObject {
         sub.font = .systemFont(ofSize: 13)
         sub.textColor = .secondaryLabelColor
 
-        let install   = button("Install Claude Code hooks",   #selector(installHooks))
-        let uninstall = button("Uninstall hooks",             #selector(uninstallHooks))
+        let install   = button("Connect my AI tools",         #selector(installHooks))
+        let uninstall = button("Disconnect (remove hooks)",   #selector(uninstallHooks))
         launchToggle  = checkbox("Launch at login",           #selector(toggleLaunch))
 
         let behaviorHeader = sectionHeader("Behavior")
@@ -121,8 +121,22 @@ final class ControlPanel: NSObject {
         return b
     }
 
-    @objc private func installHooks()    { Installer.install() }
-    @objc private func uninstallHooks()  { Installer.uninstall() }
+    @objc private func installHooks() {
+        let summary = Installer.install()
+        let alert = NSAlert()
+        alert.messageText = "Connected"
+        alert.informativeText = summary
+        alert.addButton(withTitle: "Done")
+        alert.runModal()
+    }
+    @objc private func uninstallHooks() {
+        Installer.uninstall()
+        let alert = NSAlert()
+        alert.messageText = "Disconnected"
+        alert.informativeText = "Removed leash hooks from Claude Code and Codex."
+        alert.addButton(withTitle: "OK")
+        alert.runModal()
+    }
     @objc private func toggleLaunch()    { LoginItem.toggle(); refresh() }
     @objc private func toggleSound()     { Settings.soundEnabled = (soundToggle.state == .on) }
     @objc private func toggleReturn()    { Settings.autoReturnOnSubmit = (returnToggle.state == .on) }

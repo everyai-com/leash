@@ -8,7 +8,30 @@ enum Installer {
         return home.appendingPathComponent(".claude/settings.json")
     }
 
-    static func install() {
+    /// Wire up every detected AI tool. Returns a human-readable summary so the
+    /// caller (CLI or GUI alert) can report what happened.
+    @discardableResult
+    static func install() -> String {
+        var lines: [String] = []
+        lines.append(installClaudeHooks() ? "✓ Claude Code — hooks installed" : "✗ Claude Code — failed (see Console)")
+
+        if CodexInstaller.isPresent() {
+            switch CodexInstaller.install() {
+            case .wired:        lines.append("✓ Codex — notify hook installed")
+            case .hasOwnNotify: lines.append("• Codex — you already have a `notify`; add manually:\n    \(CodexInstaller.manualSnippet)")
+            case .failed:       lines.append("✗ Codex — setup failed (see Console)")
+            }
+        } else {
+            lines.append("• Codex — not detected (skipped). Run `leash install` again after installing it.")
+        }
+
+        lines.append("")
+        lines.append("Cursor / VS Code: just run claude or codex in their built-in terminal — leash follows it automatically.")
+        return lines.joined(separator: "\n")
+    }
+
+    @discardableResult
+    private static func installClaudeHooks() -> Bool {
         let stopCmd = curlCommand(path: "/stop")
         let notifyCmd = curlCommand(path: "/notify")
         let submitCmd = curlCommand(path: "/submit")
@@ -31,13 +54,20 @@ enum Installer {
 
         do {
             try save(settings: settings)
-            print("leash: hooks installed → \(settingsPath.path)")
+            return true
         } catch {
-            FileHandle.standardError.write("leash: failed to install: \(error)\n".data(using: .utf8)!)
+            FileHandle.standardError.write("leash: failed to install Claude hooks: \(error)\n".data(using: .utf8)!)
+            return false
         }
     }
 
     static func uninstall() {
+        uninstallClaudeHooks()
+        CodexInstaller.uninstall()
+        print("leash: hooks removed (Claude Code + Codex)")
+    }
+
+    private static func uninstallClaudeHooks() {
         var settings = loadSettings()
         if var hooks = settings["hooks"] as? [String: Any] {
             for key in ["Stop", "Notification", "UserPromptSubmit"] {
@@ -64,9 +94,8 @@ enum Installer {
         }
         do {
             try save(settings: settings)
-            print("leash: hooks removed")
         } catch {
-            FileHandle.standardError.write("leash: failed to uninstall: \(error)\n".data(using: .utf8)!)
+            FileHandle.standardError.write("leash: failed to uninstall Claude hooks: \(error)\n".data(using: .utf8)!)
         }
     }
 

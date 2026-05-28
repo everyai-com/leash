@@ -22,8 +22,8 @@ final class MenuBarController {
         menu.addItem(header)
         menu.addItem(.separator())
 
-        addItem(menu, title: "Install Claude Code hooks", selector: #selector(install))
-        addItem(menu, title: "Uninstall hooks", selector: #selector(uninstall))
+        addItem(menu, title: "Connect my AI tools", selector: #selector(install))
+        addItem(menu, title: "Disconnect (remove hooks)", selector: #selector(uninstall))
         menu.addItem(.separator())
 
         launchItem = addItem(menu, title: "Launch at login", selector: #selector(toggleLaunch))
@@ -88,7 +88,14 @@ final class MenuBarController {
         launchItem.state = LoginItem.isEnabled ? .on : .off
     }
 
-    @objc private func install() { Installer.install() }
+    @objc private func install() {
+        let summary = Installer.install()
+        let alert = NSAlert()
+        alert.messageText = "Connected"
+        alert.informativeText = summary
+        alert.addButton(withTitle: "Done")
+        alert.runModal()
+    }
     @objc private func uninstall() { Installer.uninstall() }
     @objc private func toggleLaunch() {
         LoginItem.toggle()
