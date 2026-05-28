@@ -15,29 +15,51 @@ final class FocusManager {
         previousApp = nil
     }
 
-    /// Walk up the process tree from `pid` and activate the first ancestor that
-    /// corresponds to a running NSApplication (i.e. the terminal hosting Claude).
+    /// Walk up the process tree from `pid` and pick the best app to activate.
+    /// Priority: Claude desktop app > Cursor/VS Code > terminal emulator >
+    /// any regular ancestor > a running Claude.app even if not in the chain.
     func activateTerminal(forPID pid: Int32?) {
-        guard var current = pid else {
-            NSLog("leash: activateTerminal called with nil pid")
-            return
-        }
-        for step in 0..<12 {
-            let appName = NSRunningApplication(processIdentifier: current)?.bundleIdentifier ?? "?"
-            NSLog("leash: ppid-walk step=\(step) pid=\(current) bundle=\(appName)")
-            if let app = NSRunningApplication(processIdentifier: current),
-               app.activationPolicy == .regular {
-                NSLog("leash: activating \(app.bundleIdentifier ?? "?") (pid \(current))")
-                activate(app)
-                return
+        var ancestors: [NSRunningApplication] = []
+        if var current = pid {
+            for step in 0..<14 {
+                if let app = NSRunningApplication(processIdentifier: current),
+                   app.activationPolicy == .regular {
+                    NSLog("leash: ppid-walk step=\(step) pid=\(current) bundle=\(app.bundleIdentifier ?? "?")")
+                    ancestors.append(app)
+                }
+                guard let parent = parentPID(of: current), parent > 1 else { break }
+                current = parent
             }
-            guard let parent = parentPID(of: current), parent > 1 else {
-                NSLog("leash: no parent for pid \(current); giving up")
-                return
-            }
-            current = parent
         }
-        NSLog("leash: ppid-walk exhausted without finding a regular app")
+
+        let preferred: [String] = [
+            "com.anthropic.claudefordesktop",  // Claude desktop app (Cowork etc.)
+            "com.todesktop.230313mzl4w4u92",   // Cursor
+            "com.microsoft.VSCode",            // VS Code
+            "com.googlecode.iterm2",           // iTerm2
+            "com.apple.Terminal",              // Terminal.app
+            "com.mitchellh.ghostty",           // Ghostty
+            "dev.warp.Warp-Stable",            // Warp
+            "io.alacritty",                    // Alacritty
+        ]
+        for bid in preferred {
+            if let match = ancestors.first(where: { $0.bundleIdentifier == bid }) {
+                NSLog("leash: preferred match in ancestors → \(bid)")
+                activate(match); return
+            }
+        }
+        if let first = ancestors.first {
+            NSLog("leash: falling back to first regular ancestor → \(first.bundleIdentifier ?? "?")")
+            activate(first); return
+        }
+        // Last resort: Claude.app isn't in the chain but is running anyway.
+        if let claude = NSWorkspace.shared.runningApplications.first(where: {
+            $0.bundleIdentifier == "com.anthropic.claudefordesktop"
+        }) {
+            NSLog("leash: last-resort activating running Claude.app")
+            activate(claude); return
+        }
+        NSLog("leash: nothing to activate")
     }
 
     /// True if the frontmost app is the terminal hosting `pid` (i.e. user is
