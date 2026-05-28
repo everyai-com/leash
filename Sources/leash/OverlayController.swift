@@ -37,6 +37,9 @@ final class OverlayController {
             window.backgroundColor = .clear
             window.hasShadow = false
             window.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]
+            // Force dark appearance so the frosted card + white text stay
+            // high-contrast even when the user is in Light Mode.
+            window.appearance = NSAppearance(named: .darkAqua)
 
             let view = OverlayView(
                 message: event.message,
@@ -150,14 +153,15 @@ private final class OverlayView: NSView {
         self.onSnooze = onSnooze
         super.init(frame: .zero)
         wantsLayer = true
-        layer?.backgroundColor = NSColor.black.withAlphaComponent(0.55).cgColor
+        appearance = NSAppearance(named: .darkAqua)
+        layer?.backgroundColor = NSColor.black.withAlphaComponent(0.82).cgColor
 
         // Subtle radial vignette for focus
         let vignette = CAGradientLayer()
         vignette.type = .radial
         vignette.colors = [
-            NSColor.clear.cgColor,
-            NSColor.black.withAlphaComponent(0.55).cgColor
+            NSColor.black.withAlphaComponent(0.35).cgColor,
+            NSColor.black.withAlphaComponent(0.82).cgColor
         ]
         vignette.startPoint = CGPoint(x: 0.5, y: 0.5)
         vignette.endPoint = CGPoint(x: 1, y: 1)
@@ -196,6 +200,16 @@ private final class OverlayView: NSView {
         addSubview(card)
         card.addSubview(blur)
 
+        // Dark tint over the blur so white text is always high-contrast,
+        // independent of what's behind the overlay or the system appearance.
+        let tint = NSView()
+        tint.wantsLayer = true
+        tint.layer?.backgroundColor = NSColor(white: 0.04, alpha: 0.55).cgColor
+        tint.layer?.cornerRadius = 28
+        tint.layer?.cornerCurve = .continuous
+        tint.translatesAutoresizingMaskIntoConstraints = false
+        card.addSubview(tint)
+
         // Accent badge (red dot, breathing)
         let badge = NSView()
         badge.wantsLayer = true
@@ -216,8 +230,8 @@ private final class OverlayView: NSView {
         badge.layer?.add(pulse, forKey: "pulse")
 
         let kicker = NSTextField(labelWithString: "CLAUDE IS WAITING")
-        kicker.font = .systemFont(ofSize: 13, weight: .semibold)
-        kicker.textColor = NSColor.white.withAlphaComponent(0.7)
+        kicker.font = .systemFont(ofSize: 13, weight: .bold)
+        kicker.textColor = NSColor.white.withAlphaComponent(0.92)
         kicker.alignment = .left
         kicker.setContentHuggingPriority(.required, for: .vertical)
 
@@ -235,8 +249,8 @@ private final class OverlayView: NSView {
         // Subtitle (the cwd / repo it's waiting in)
         let where_ = projectName(from: cwd) ?? "an open session"
         let subtitle = NSTextField(labelWithString: "in \(where_)")
-        subtitle.font = .systemFont(ofSize: 20, weight: .regular)
-        subtitle.textColor = NSColor.white.withAlphaComponent(0.6)
+        subtitle.font = .systemFont(ofSize: 20, weight: .medium)
+        subtitle.textColor = NSColor.white.withAlphaComponent(0.85)
         subtitle.alignment = .left
 
         // Optional message from the hook (e.g. permission prompt text)
@@ -244,7 +258,7 @@ private final class OverlayView: NSView {
         if let m = message?.trimmingCharacters(in: .whitespacesAndNewlines), !m.isEmpty {
             let msg = NSTextField(labelWithString: "“\(m)”")
             msg.font = .systemFont(ofSize: 17, weight: .regular)
-            msg.textColor = NSColor.white.withAlphaComponent(0.85)
+            msg.textColor = NSColor.white.withAlphaComponent(0.95)
             msg.alignment = .left
             msg.maximumNumberOfLines = 3
             msg.lineBreakMode = .byTruncatingTail
@@ -283,6 +297,11 @@ private final class OverlayView: NSView {
             blur.trailingAnchor.constraint(equalTo: card.trailingAnchor),
             blur.topAnchor.constraint(equalTo: card.topAnchor),
             blur.bottomAnchor.constraint(equalTo: card.bottomAnchor),
+
+            tint.leadingAnchor.constraint(equalTo: card.leadingAnchor),
+            tint.trailingAnchor.constraint(equalTo: card.trailingAnchor),
+            tint.topAnchor.constraint(equalTo: card.topAnchor),
+            tint.bottomAnchor.constraint(equalTo: card.bottomAnchor),
 
             stack.leadingAnchor.constraint(equalTo: card.leadingAnchor, constant: 56),
             stack.trailingAnchor.constraint(equalTo: card.trailingAnchor, constant: -56),
@@ -331,15 +350,15 @@ private final class ChipView: NSView {
     init(title: String) {
         super.init(frame: .zero)
         wantsLayer = true
-        layer?.backgroundColor = NSColor.white.withAlphaComponent(0.12).cgColor
+        layer?.backgroundColor = NSColor.white.withAlphaComponent(0.18).cgColor
         layer?.cornerRadius = 14
         layer?.cornerCurve = .continuous
-        layer?.borderColor = NSColor.white.withAlphaComponent(0.18).cgColor
+        layer?.borderColor = NSColor.white.withAlphaComponent(0.28).cgColor
         layer?.borderWidth = 1
 
         let label = NSTextField(labelWithString: title)
-        label.font = .systemFont(ofSize: 16, weight: .medium)
-        label.textColor = NSColor.white.withAlphaComponent(0.92)
+        label.font = .systemFont(ofSize: 16, weight: .semibold)
+        label.textColor = .white
         label.translatesAutoresizingMaskIntoConstraints = false
         addSubview(label)
         NSLayoutConstraint.activate([
