@@ -83,10 +83,10 @@ final class OverlayController {
         let pid = pendingPID
         pendingPID = nil
         release()
-        NSApp.hide(nil)
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.08) { [focus] in
-            focus.activateTerminal(forPID: pid)
-        }
+        // Activate the target app directly. Don't call NSApp.hide first —
+        // hiding surfaces whatever app was below leash, which races our
+        // activate call and usually wins.
+        focus.activateTerminal(forPID: pid)
     }
 
     private func playSound() {
